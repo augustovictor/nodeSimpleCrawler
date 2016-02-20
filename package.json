@@ -1,17 +1,16 @@
 {
-  "name": "nodecrawlerexpress",
-  "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "victor augusto",
-  "license": "ISC",
-  "dependencies": {
-    "cheerio": "^0.20.0",
-    "express": "^4.13.4",
-    "request": "^2.69.0",
-    "simplecrawler": "^0.6.2"
-  }
+    "name": "nodecrawlerexpress",
+    "version": "1.0.0",
+    "description": "",
+    "main": "server.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "victor augusto",
+    "license": "ISC",
+    "dependencies": {
+        "cheerio": "^0.20.0",
+        "express": "^4.13.4",
+        "request": "^2.69.0"
+    }
 }
