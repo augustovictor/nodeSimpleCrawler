@@ -1,0 +1,83 @@
+[
+    {
+        "state": "AC*ACRE"
+    },
+    {
+        "state": "AL*ALAGOAS"
+    },
+    {
+        "state": "AP*AMAPA"
+    },
+    {
+        "state": "AM*AMAZONAS"
+    },
+    {
+        "state": "BA*BAHIA"
+    },
+    {
+        "state": "CE*CEARA"
+    },
+    {
+        "state": "DF*DISTRITO@FEDERAL"
+    },
+    {
+        "state": "ES*ESPIRITO@SANTO"
+    },
+    {
+        "state": "GO*GOIAS"
+    },
+    {
+        "state": "MA*MARANHAO"
+    },
+    {
+        "state": "MT*MATO@GROSSO"
+    },
+    {
+        "state": "MS*MATO@GROSSO@DO@SUL"
+    },
+    {
+        "state": "MG*MINAS@GERAIS"
+    },
+    {
+        "state": "PA*PARA"
+    },
+    {
+        "state": "PB*PARAIBA"
+    },
+    {
+        "state": "PR*PARANA"
+    },
+    {
+        "state": "PE*PERNAMBUCO"
+    },
+    {
+        "state": "PI*PIAUI"
+    },
+    {
+        "state": "RJ*RIO@DE@JANEIRO"
+    },
+    {
+        "state": "RN*RIO@GRANDE@DO@NORTE"
+    },
+    {
+        "state": "RS*RIO@GRANDE@DO@SUL"
+    },
+    {
+        "state": "RO*RONDONIA"
+    },
+    {
+        "state": "RR*RORAIMA"
+    },
+    {
+        "state": "SC*SANTA@CATARINA"
+    },
+    {
+        "state": "SP*SAO@PAULO"
+    },
+    {
+        "state": "SE*SERGIPE"
+    },
+    {
+        "state": "TO*TOCANTINS"
+    }
+]
