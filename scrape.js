@@ -3,37 +3,6 @@ var cheerio = require('cheerio');
 
 var initialUlr = 'http://www.anp.gov.br/preco/prc/Resumo_Por_Estado_Index.asp';
 
-var optionsCities = {
-    method: 'POST',
-    url: 'http://www.anp.gov.br/preco/prc/Resumo_Por_Estado_Municipio.asp',
-    headers: {
-        'postman-token': '590297bc-c1a9-0d8e-e519-1c14c4686e05',
-        'cache-control': 'no-cache',
-        'content-type': 'application/x-www-form-urlencoded'
-    },
-    form: {
-        selEstado: 'AC*ACRE',
-        selCombustivel: '487*Gasolina',
-        selSemana: '870*De 14/02/2016 a 20/02/2016',
-        desc_Semana: 'de 14/02/2016 a 20/02/2016'
-    }
-};
-
-var optionsStations = {
-    method: 'POST',
-    url: 'http://www.anp.gov.br/preco/prc/Resumo_Semanal_Posto.asp',
-    headers: {
-        'postman-token': 'aa168332-3179-dc16-4310-d303388bb2f5',
-        'cache-control': 'no-cache',
-        'content-type': 'application/x-www-form-urlencoded'
-    },
-    form: {
-        cod_semana: '870',
-        cod_combustivel: '487',
-        selMunicipio: '6*CRUZEIRO@DO@SUL'
-    }
-};
-
 var states = [];
 var fuels = [];
 var cities = [];
@@ -66,7 +35,7 @@ request(initialUlr, function (error, response, body) {
     // 3 = lines which are headers for the table of contents we want
     var resultsQt = $('#box tr').length - 3;
     
-    for (var i = 0; i < states.length; i++) {
+    for (var i = 0; i < 1; i++) {
         request.post({
             url: 'http://www.anp.gov.br/preco/prc/Resumo_Por_Estado_Municipio.asp',
             headers: {
@@ -91,7 +60,7 @@ request(initialUlr, function (error, response, body) {
                     name: tableRow.eq(0).text(),
                     statistics: [
                         {
-                            type: optionsCities['form'].selCombustivel.split('*')[1],
+                            type: $('input[name="desc_combustivel"]').val().replace(/[-R$]|\/l/g, '').trim(),
                             consumerPrice: [
                                 {
                                     averagePrice: tableRow.eq(2).text().replace(',', '.'),
