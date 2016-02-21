@@ -1,8 +1,7 @@
 var request = require("request");
 var cheerio = require('cheerio');
-var promise = require('promise');
 
-var json = [];
+var initialUlr = 'http://www.anp.gov.br/preco/prc/Resumo_Por_Estado_Index.asp';
 
 var optionsCities = {
     method: 'POST',
@@ -35,83 +34,89 @@ var optionsStations = {
     }
 };
 
+var states = [];
+var fuels = [];
 var cities = [];
 var stations = [];
 
-
-request(optionsCities, function (error, response, body) {
-    'use strict';
-
-    if (error) throw new Error(error);
-
+// Gets all states and fuel types
+request(initialUlr, function (error, response, body) {
     var $ = cheerio.load(body);
 
+    $('select[name="selEstado"] option').each(function () {
+        states.push({
+            acronym: $(this).val().split('*')[0],
+            name: $(this).val().split('*')[1].replace(/@/g, ' '),
+            raw: $(this).val()
+        });
+    });
 
+    $('select[name="selCombustivel"] option').each(function () {
+        fuels.push({
+            code: $(this).val().split('*')[0],
+            name: $(this).val().split('*')[1].replace(/@/g, ' '),
+            raw: $(this).val()
+        });
+    });
+    
+    //////////////////////////////////////////////////////////////////////
+    
+    // Gets all cities in a state
+    
     // 3 = lines which are headers for the table of contents we want
     var resultsQt = $('#box tr').length - 3;
-
-
-
-    for (var i = 1; i <= resultsQt; i++) {
-        
-        // Stations here
-request(optionsStations, function (errorsStations, responseStations, body) {
-    var $ = cheerio.load(body);
-
-    var stationRow = $('.multi_box3 tr');
-    var stationsQt = stationRow.length - 1;
-
-    for (var i = 1; i <= stationsQt; i++) {
-        var stationRowCell = stationRow.eq(i).children('td');
-
-        stations.push({
-            name: stationRowCell.eq(0).text(),
-            address: stationRowCell.eq(1).text(),
-            area: stationRowCell.eq(2).children('a').text(),
-            flag: stationRowCell.eq(3).text(),
-            prices: {
-                type: $('.tabela3 > div h3').eq(1).text(),
-                sellPrice: stationRowCell.eq(4).text(),
-                buyPrice: stationRowCell.eq(5).text(),
-                saleMode: stationRowCell.eq(6).text(),
-                provider: stationRowCell.eq(7).text(),
-                date: stationRowCell.eq(8).text()
+    
+    for (var i = 0; i < states.length; i++) {
+        request.post({
+            url: 'http://www.anp.gov.br/preco/prc/Resumo_Por_Estado_Municipio.asp',
+            headers: {
+                'content-type': 'application/x-www-form-urlencoded'
+            },
+            form: {
+                selEstado: states[i]['raw'],
+                selCombustivel: '487*Gasolina',
+                selSemana: '870*De 14/02/2016 a 20/02/2016',
+                desc_Semana: 'de 14/02/2016 a 20/02/2016'
             }
-        });
-    }
+        }, function (error, response, html) {
+            var $ = cheerio.load(html);
+            
+            // 3 = lines which are headers for the table of contents we want
+            var resultsQt = $('#box tr').length - 3;
 
-    console.log(JSON.stringify(stations));
-});
-        
-        var tableRow = $('#box tr').eq(i + 2).children('td');
-        cities.push({
-            name: tableRow.eq(0).text(),
-            statistics: [
-                {
-                    type: optionsCities['form'].selCombustivel.split('*')[1],
-                    consumerPrice: [
+            for (var j = 1; j <= resultsQt; j++) {
+
+                var tableRow = $('#box tr').eq(j + 2).children('td');
+                cities.push({
+                    name: tableRow.eq(0).text(),
+                    statistics: [
                         {
-                            averagePrice: tableRow.eq(2).text().replace(',', '.'),
-                            standardDeviation: tableRow.eq(3).text().replace(',', '.'),
-                            minPrice: tableRow.eq(4).text().replace(',', '.'),
-                            maxPrice: tableRow.eq(5).text().replace(',', '.'),
-                            averageMargin: tableRow.eq(6).text().replace(',', '.')
-                            }
-                        ],
-                    distributionPrice: [
-                        {
-                            averagePrice: tableRow.eq(7).text().replace(',', '.'),
-                            standardDeviation: tableRow.eq(8).text().replace(',', '.'),
-                            minPrice: tableRow.eq(9).text().replace(',', '.'),
-                            maxPrice: tableRow.eq(10).text().replace(',', '.')
+                            type: optionsCities['form'].selCombustivel.split('*')[1],
+                            consumerPrice: [
+                                {
+                                    averagePrice: tableRow.eq(2).text().replace(',', '.'),
+                                    standardDeviation: tableRow.eq(3).text().replace(',', '.'),
+                                    minPrice: tableRow.eq(4).text().replace(',', '.'),
+                                    maxPrice: tableRow.eq(5).text().replace(',', '.'),
+                                    averageMargin: tableRow.eq(6).text().replace(',', '.')
+                                    }
+                                ],
+                            distributionPrice: [
+                                {
+                                    averagePrice: tableRow.eq(7).text().replace(',', '.'),
+                                    standardDeviation: tableRow.eq(8).text().replace(',', '.'),
+                                    minPrice: tableRow.eq(9).text().replace(',', '.'),
+                                    maxPrice: tableRow.eq(10).text().replace(',', '.')
+                                }
+                            ]
                         }
-                    ]
-                }
-            ],
-            stations: stations
+                    ],
+                    stations: ''
+                });
+            }
+            console.log(JSON.stringify(cities));
+            
         });
     }
-
-    //    console.log('Dados');
-        console.log(JSON.stringify(cities));
 });
+
