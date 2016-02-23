@@ -6,6 +6,7 @@ var _ = require('lodash');
 // Utils
 var statesUtil = require('./statesUtil.js');
 var citiesUtil = require('./citiesUtil.js');
+var fuelsUtil = require('./fuelsUtil.js');
 
 //
 
@@ -43,37 +44,31 @@ var stateOptions = {
     }
 }
 
-var cityOptions = {
-    method: 'POST',
-    uri: 'http://www.anp.gov.br/preco/prc/Resumo_Semanal_Posto.asp',
-    headers: {
-        'content-type': 'application/x-www-form-urlencoded'
-    },
-    form: {
-        cod_semana: '870',
-        cod_combustivel: '487',
-        selMunicipio: '6*CRUZEIRO@DO@SUL'
-    }
-};
-
 rp(initialOptions).then($ => {
     html = $.html();
     // Gets all states and fuel types
     states = statesUtil($);
+    fuels = fuelsUtil($);
 }).then(() => {
     // For each state
-    var promise = Promise.resolve();
+//    console.log(JSON.stringify(states));
 
     _.forEach(states, state => {
+//        console.log(state.name);
+        var promise = Promise.resolve();
         stateOptions.form.selEstado = state.raw;
-        _.forEach(state.fuels, fuel => {
-            // Binds fuel to a city request
+        
+        // Each fuel type
+        _.forEach(fuels, fuel => {
+//            // Binds fuel to a city request
             stateOptions.form.selCombustivel = fuel.raw;
-
+            console.log(JSON.stringify(stateOptions));
+//
             promise = rp(stateOptions).then(citiesResponse => {
                 weekCode = citiesResponse('#frmAberto input[name="cod_semana"]').val();
-                cities = citiesUtil(citiesResponse, fuel);
-                console.log(JSON.stringify(cities));
+                cities = citiesUtil(citiesResponse, fuel.name);
+                state.cities = cities;
+//                console.log(JSON.stringify(state));
             }).catch(err => console.log(err));
         });
     });
