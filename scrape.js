@@ -73,7 +73,7 @@ rp(initialOptions).then($ => {
             promise = rp(stateOptions).then(citiesResponse => {
                 weekCode = citiesResponse('#frmAberto input[name="cod_semana"]').val();
                 cities = citiesUtil(citiesResponse, fuel);
-                console.log(cities);
+                console.log(JSON.stringify(cities));
             }).catch(err => console.log(err));
         });
     });
