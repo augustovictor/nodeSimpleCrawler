@@ -1,6 +1,7 @@
 //var request = require("request");
 var rp = require('request-promise');
 var cheerio = require('cheerio');
+var _ = require('lodash');
 
 // Utils
 var statesUtil = require('./statesUtil.js');
@@ -55,42 +56,27 @@ var cityOptions = {
     }
 };
 
-rp(initialOptions)
-    .then(function ($) {
-        html = $.html();
+rp(initialOptions).then($ => {
+    html = $.html();
+    // Gets all states and fuel types
+    states = statesUtil($);
+}).then(() => {
+    // For each state
+    var promise = Promise.resolve();
 
-        // Gets all states and fuel types
-        states = statesUtil($);
+    _.forEach(states, state => {
+        stateOptions.form.selEstado = state.raw;
+        _.forEach(state.fuels, fuel => {
+            // Binds fuel to a city request
+            stateOptions.form.selCombustivel = fuel.raw;
 
-    })
-    .then(function () {
-        // For each state
-        for (var i = 0; i < 2; i++) {
-
-            // Binds state to cities request
-            stateOptions.form.selEstado = states[i].raw;
-
-            // For each fuel type
-            for (var j = 0; j < states[i].fuels.length; j++) {
-
-                // Binds fuel to a city request
-                stateOptions.form.selCombustivel = states[i].fuels[j].raw;
-
-                //                console.log(stateOptions);
-
-                rp(stateOptions)
-                    .then(function (citiesResponse) {
-                        weekCode = citiesResponse('#frmAberto input[name="cod_semana"]').val();
-                        cities = citiesUtil(citiesResponse, states[i].fuels[j]);
-                        console.log(cities);
-                    })
-                    .catch(function (error) {
-                        console.log(error);
-                    });
-
-            }
-        }
-    })
-    .catch(function (err) {
-        console.log(err);
+            promise = rp(stateOptions).then(citiesResponse => {
+                weekCode = citiesResponse('#frmAberto input[name="cod_semana"]').val();
+                cities = citiesUtil(citiesResponse, fuel);
+                console.log(cities);
+            }).catch(err => console.log(err));
+        });
     });
+
+    return promise;
+}).catch(err => console.log(err));
