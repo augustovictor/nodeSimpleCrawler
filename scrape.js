@@ -1,5 +1,12 @@
-var request = require("request");
+//var request = require("request");
+var rp = require('request-promise');
 var cheerio = require('cheerio');
+
+// Utils
+var statesUtil = require('./statesUtil.js');
+var citiesUtil = require('./citiesUtil.js');
+
+//
 
 var initialUlr = 'http://www.anp.gov.br/preco/prc/Resumo_Por_Estado_Index.asp';
 
@@ -8,84 +15,82 @@ var fuels = [];
 var cities = [];
 var stations = [];
 
-// Gets all states and fuel types
-request(initialUlr, function (error, response, body) {
-    var $ = cheerio.load(body);
+var html;
+var weekCode;
 
-    $('select[name="selEstado"] option').each(function () {
-        states.push({
-            acronym: $(this).val().split('*')[0],
-            name: $(this).val().split('*')[1].replace(/@/g, ' '),
-            raw: $(this).val()
-        });
-    });
-
-    $('select[name="selCombustivel"] option').each(function () {
-        fuels.push({
-            code: $(this).val().split('*')[0],
-            name: $(this).val().split('*')[1].replace(/@/g, ' '),
-            raw: $(this).val()
-        });
-    });
-    
-    //////////////////////////////////////////////////////////////////////
-    
-    // Gets all cities in a state
-    
-    // 3 = lines which are headers for the table of contents we want
-    var resultsQt = $('#box tr').length - 3;
-    
-    for (var i = 0; i < 1; i++) {
-        request.post({
-            url: 'http://www.anp.gov.br/preco/prc/Resumo_Por_Estado_Municipio.asp',
-            headers: {
-                'content-type': 'application/x-www-form-urlencoded'
-            },
-            form: {
-                selEstado: states[i]['raw'],
-                selCombustivel: '487*Gasolina',
-                selSemana: '870*De 14/02/2016 a 20/02/2016',
-                desc_Semana: 'de 14/02/2016 a 20/02/2016'
-            }
-        }, function (error, response, html) {
-            var $ = cheerio.load(html);
-            
-            // 3 = lines which are headers for the table of contents we want
-            var resultsQt = $('#box tr').length - 3;
-
-            for (var j = 1; j <= resultsQt; j++) {
-
-                var tableRow = $('#box tr').eq(j + 2).children('td');
-                cities.push({
-                    name: tableRow.eq(0).text(),
-                    statistics: [
-                        {
-                            type: $('input[name="desc_combustivel"]').val().replace(/[-R$]|\/l/g, '').trim(),
-                            consumerPrice: [
-                                {
-                                    averagePrice: tableRow.eq(2).text().replace(',', '.'),
-                                    standardDeviation: tableRow.eq(3).text().replace(',', '.'),
-                                    minPrice: tableRow.eq(4).text().replace(',', '.'),
-                                    maxPrice: tableRow.eq(5).text().replace(',', '.'),
-                                    averageMargin: tableRow.eq(6).text().replace(',', '.')
-                                    }
-                                ],
-                            distributionPrice: [
-                                {
-                                    averagePrice: tableRow.eq(7).text().replace(',', '.'),
-                                    standardDeviation: tableRow.eq(8).text().replace(',', '.'),
-                                    minPrice: tableRow.eq(9).text().replace(',', '.'),
-                                    maxPrice: tableRow.eq(10).text().replace(',', '.')
-                                }
-                            ]
-                        }
-                    ],
-                    stations: ''
-                });
-            }
-            console.log(JSON.stringify(cities));
-            
-        });
+var initialOptions = {
+    uri: 'http://www.anp.gov.br/preco/prc/Resumo_Por_Estado_Index.asp',
+    transform: function (body) {
+        return cheerio.load(body);
     }
-});
+}
 
+var stateOptions = {
+    method: 'POST',
+    uri: 'http://www.anp.gov.br/preco/prc/Resumo_Por_Estado_Municipio.asp',
+    headers: {
+        'content-type': 'application/x-www-form-urlencoded'
+    },
+    form: {
+        selEstado: '',
+        selCombustivel: '',
+        selSemana: '870*De 14/02/2016 a 20/02/2016',
+        desc_Semana: 'de 14/02/2016 a 20/02/2016'
+    },
+    transform: function (body) {
+        return cheerio.load(body);
+    }
+}
+
+var cityOptions = {
+    method: 'POST',
+    uri: 'http://www.anp.gov.br/preco/prc/Resumo_Semanal_Posto.asp',
+    headers: {
+        'content-type': 'application/x-www-form-urlencoded'
+    },
+    form: {
+        cod_semana: '870',
+        cod_combustivel: '487',
+        selMunicipio: '6*CRUZEIRO@DO@SUL'
+    }
+};
+
+rp(initialOptions)
+    .then(function ($) {
+        html = $.html();
+
+        // Gets all states and fuel types
+        states = statesUtil($);
+
+    })
+    .then(function () {
+        // For each state
+        for (var i = 0; i < 2; i++) {
+
+            // Binds state to cities request
+            stateOptions.form.selEstado = states[i].raw;
+
+            // For each fuel type
+            for (var j = 0; j < states[i].fuels.length; j++) {
+
+                // Binds fuel to a city request
+                stateOptions.form.selCombustivel = states[i].fuels[j].raw;
+
+                //                console.log(stateOptions);
+
+                rp(stateOptions)
+                    .then(function (citiesResponse) {
+                        weekCode = citiesResponse('#frmAberto input[name="cod_semana"]').val();
+                        cities = citiesUtil(citiesResponse, states[i].fuels[j]);
+                        console.log(cities);
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
+
+            }
+        }
+    })
+    .catch(function (err) {
+        console.log(err);
+    });
